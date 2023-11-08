@@ -9,6 +9,8 @@ public class TPSController : MonoBehaviour
     private float _horizontal;
     private float _vertical;
 
+    public int shootDamage = 2;
+
     private Animator _animator;
 
     //variables para velocidad, salto y gravedad
@@ -54,6 +56,11 @@ public class TPSController : MonoBehaviour
         }
         //Movement();
         Jump();
+
+        if(Input.GetKeyDown(KeyCode.K))
+        {
+            RayTest();
+        }
     }
 
     void Movement()
@@ -101,9 +108,12 @@ public class TPSController : MonoBehaviour
     {
         _isGrounded = Physics.CheckSphere(_sensorPosition.position, _sensorRadius, _groundLayer);
 
+        /*_isGrounded = Physics.Raycast(_sensorPosition.position, Vector3.down, _sensorRadius, _groundLayer);
+        Debug.DrawRay(_sensorPosition.position, Vector3.down * _sensorRadius, Color.red);*/
+
         if(_isGrounded && _playerGravity.y < 0)
         {
-            _playerGravity.y = 0;
+            _playerGravity.y = -2;
         }
 
         if(_isGrounded && Input.GetButtonDown("Jump"))
@@ -113,5 +123,36 @@ public class TPSController : MonoBehaviour
         _playerGravity.y += _gravity * Time.deltaTime;
 
         _controller.Move(_playerGravity * Time.deltaTime);
+    }
+
+    void RayTest()
+    {
+        //Raycast simple
+
+        /*if(Physics.Raycast(transform.position, transform.forward, 10))
+        {
+            Debug.Log("Hit");
+            Debug.DrawRay(transform.position, transform.forward * 10, Color.green);
+        }
+        else
+        {
+            Debug.DrawRay(transform.position, transform.forward * 10, Color.red);
+        }*/
+
+        RaycastHit hit;
+        if(Physics.Raycast(transform.position, transform.forward, out hit, 10))
+        {
+            Debug.Log(hit.transform.name);
+            Debug.Log(hit.transform.position);
+            //Destroy(hit.transform.gameObject);
+
+            Box caja = hit.transform.GetComponent<Box>();
+
+            if(caja != null)
+            {
+                caja.TakeDamage(shootDamage);
+            }
+            
+        }
     }
 }
