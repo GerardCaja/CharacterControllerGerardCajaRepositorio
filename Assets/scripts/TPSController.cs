@@ -15,9 +15,13 @@ public class TPSController : MonoBehaviour
 
     //variables para velocidad, salto y gravedad
     [SerializeField] private float playerSpeed = 5;
-    [SerializeField] private float _jumpHeight;
+    [SerializeField] private float _jumpHeight = 1;
+    [SerializeField] private float _pushForce = 5;
+    [SerializeField] private float _throwForce = 10;
     private float _gravity = -9.81f;
     private Vector3 _playerGravity;
+    private bool _isAniming = false;
+    
 
     //variables para rotacion
     private float turnSmoothVelocity;
@@ -29,6 +33,11 @@ public class TPSController : MonoBehaviour
     [SerializeField] private float _sensorRadius = 0.2f;
     [SerializeField] private LayerMask _groundLayer;
     private bool _isGrounded;
+
+    //variables para recoger cosas
+    public GameObject objectToGrab;
+    private GameObject grabedObject;
+    [SerializeField] private Transform _interactionZone;
 
     
     // Start is called before the first frame update
@@ -49,17 +58,30 @@ public class TPSController : MonoBehaviour
         if(Input.GetButton("Fire2"))
         {
             AimMovement();
+            _isAniming = true;
         }
         else
         {
             Movement();
+            _isAniming = false;
         }
         //Movement();
+
+        if(Input.GetButtonDown("Fire1") && grabedObject != null)
+        {
+            ThrowObject();
+        }
+
         Jump();
 
         if(Input.GetKeyDown(KeyCode.K))
         {
             RayTest();
+        }
+
+        if(Input.GetKeyDown(KeyCode.E))
+        {
+            GrabObject();
         }
     }
 
@@ -154,5 +176,57 @@ public class TPSController : MonoBehaviour
             }
             
         }
+    }
+
+    void OnDrawGizmos()
+    {
+        Gizmos.color = Color.green;
+        Gizmos.DrawWireSphere(_sensorPosition.position, _sensorRadius);
+    }
+
+    void OnControllerColliderHit(ControllerColliderHit hit)
+    {
+        Rigidbody body = hit.collider.attachedRigidbody;
+
+        if(body == null || body.isKinematic)
+        {
+            return;
+        }
+
+        if(hit.moveDirection.y < -0.2f)
+        {
+            return;
+        }
+
+        Vector3 pushDirection = new Vector3(hit.moveDirection.x, 0, hit.moveDirection.z);
+
+        body.velocity = pushDirection * _pushForce / body.mass;
+    }
+
+    void GrabObject()
+    {
+        if(objectToGrab != null && grabedObject == null)
+        {
+            grabedObject = objectToGrab;
+            grabedObject.transform.SetParent(_interactionZone);
+            grabedObject.transform.position = _interactionZone.position;
+            grabedObject.GetComponent<Rigidbody>().isKinematic = true;
+        }
+        else if(grabedObject != null)
+        {
+            grabedObject.GetComponent<Rigidbody>().isKinematic = false;
+            grabedObject.transform.SetParent(null);
+            grabedObject = null;
+        }
+    }
+
+    void ThrowObject()
+    {
+        Rigidbody grabedBody= grabedObject.GetComponent<Rigidbody>();
+
+        grabedBody.GetComponent<Rigidbody>().isKinematic = false;
+        grabedObject.transform.SetParent(null);
+        grabedBody.GetComponent<Rigidbody>().AddForce(_camera.transform.forward * _throwForce, ForceMode.Impulse);
+        grabedObject = null;
     }
 }
